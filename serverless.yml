@@ -1,0 +1,102 @@
+service: myawsreactnodeserverlessproject
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  profile: aws-react-node-serverless-backend-user
+  region: us-east-1
+  environment:
+    tableName: dssUserTable
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "lambda:*"
+          Resource: "*"
+
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"
+
+plugins:
+  - serverless-offline
+
+custom:
+  tableName: dssUserTable
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          path: /user
+          method: get
+  createUser:
+    handler: lambdas/endpoints/createUser.register
+    events:
+      - http:
+          path: /user/signup
+          method: post
+  signinUser:
+    handler: lambdas/endpoints/signinUser.signin
+    events:
+      - http:
+          path: /user/signin
+          method: post
+  category:
+    handler: lambdas/endpoints/category.addCategory
+    events:
+      - http: 
+          path: /addcategory
+          method: post
+  getCategory:
+    handler: lambdas/endpoints/category.getCategory
+    events:
+      - http:
+          path: /getcategory/{id}
+          method: get
+  updateCategory:
+    handler: lambdas/endpoints/category.updateCategory
+    events: 
+      - http: 
+          path: /updatecategory/{id}
+          method: patch
+  getAllCategory:
+    handler: lambdas/endpoints/category.getAllCategory
+    events:
+      - http:
+          path: /getallcategory
+          method: get
+
+resources:
+  Resources:
+    UserDynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: dssUserTable
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+    CategoryDynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: CategoryTable
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
