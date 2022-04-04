@@ -3,21 +3,19 @@ const { TableNames } = require('../../constants');
 const API_RESPONSES = require('../common/API_RESPONSES')
 const bcryptjs = require('bcryptjs');
 const Dynamo = require('../common/Dynamo');
-const { keys } = require('lodash');
+const { keys} = require('lodash');
+const uuid = require('uuid');
 
 
 const dynamodb = new aws.DynamoDB.DocumentClient();
 
-exports.register = async event => {
+exports.Register = async event => {
     console.log("register event", event);
     const data = JSON.parse(event.body);
     console.log("data", data);
-    const firstName = data.firstName;
-    const lastName = data.lastName;
-    const email = data.email;
-    const password = data.password;
+    const {firstName, lastName, email, password, role} = data;
 
-    if (!firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !email || !password || !role) {
         return API_RESPONSES.buildResponse(401, {
             message: 'All fields are required'
         })
@@ -43,15 +41,17 @@ exports.register = async event => {
 
     const hash_password = bcryptjs.hashSync(password, 10);
     const user = {
+        id : uuid.v1(),
         firstName: firstName,
         lastName: lastName,
         email: email,
-        password: hash_password
+        password: hash_password,
+        role: role
     }
 
     await Dynamo.createUser(user, TableNames.USER)
     return API_RESPONSES.buildResponse(200, {
-        message: 'User created successfully'
+        message: `${role} created successfully`
     })
 
 }

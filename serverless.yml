@@ -29,14 +29,8 @@ custom:
   tableName: dssUserTable
 
 functions:
-  hello:
-    handler: handler.hello
-    events:
-      - http:
-          path: /user
-          method: get
-  createUser:
-    handler: lambdas/endpoints/createUser.register
+  auth:
+    handler: lambdas/endpoints/auth.Register
     events:
       - http:
           path: /user/signup
@@ -47,6 +41,7 @@ functions:
       - http:
           path: /user/signin
           method: post
+          cors: true
   category:
     handler: lambdas/endpoints/category.addCategory
     events:
@@ -71,6 +66,35 @@ functions:
       - http:
           path: /getallcategory
           method: get
+          cors: true
+  addTopic:
+    handler: lambdas/endpoints/topic.addTopic
+    events:
+      - http:
+          path: /addtopic
+          method: post
+          cors: true
+  getAllTopic:
+    handler: lambdas/endpoints/topic.getAllTopic
+    events:
+      - http:
+          path: /getalltopics
+          method: get
+          cors: true
+  getSingleTopic:
+    handler: lambdas/endpoints/topic.getSingleTopic
+    events:
+      - http:
+          path: /getsingletopic/{id}
+          method: get
+          cors: true
+  updateTopic:
+    handler: lambdas/endpoints/topic.updateTopic
+    events:
+      -  http:
+          path: /update/topic/{id}
+          method: patch
+          cors: true
 
 resources:
   Resources:
@@ -91,6 +115,19 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: CategoryTable
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+    TopicDynamoTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: TopicTable
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S

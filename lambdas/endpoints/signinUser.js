@@ -35,7 +35,7 @@ exports.signin = async event => {
             message : "User does't exist"
         })
     }
-    const { firstName,lastName } = result.Item;
+    const { firstName,lastName,role } = result.Item;
 
     console.log("result", result);
     console.log("result.item", result.Item.password)
@@ -48,7 +48,8 @@ exports.signin = async event => {
             user : {
                 firstName,
                 lastName,
-                email
+                email,
+                role
             }
         })
     } else {

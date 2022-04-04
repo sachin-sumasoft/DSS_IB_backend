@@ -3,8 +3,11 @@ const API_RESPONSES = require('../common/API_RESPONSES');
 const Dynamo = require('../common/Dynamo');
 const aws = require('aws-sdk');
 const uuid = require('uuid');
+const jwt = require("jsonwebtoken");
+require('dotenv').config();
 
 const dynamodb = new aws.DynamoDB.DocumentClient();
+const timestamp = new Date().getTime();
 
 exports.addCategory = async event => {
     console.log("createCategory", event);
@@ -17,7 +20,8 @@ exports.addCategory = async event => {
         Parent: data.Parent,
         Status: data.Status,
         Language: data.Language,
-        Name: data.Name
+        Name: data.Name,
+        createdon: timestamp
     }
     console.log("categoryObj", categoryObj);
 
@@ -63,67 +67,40 @@ exports.getCategory = async event => {
 exports.getAllCategory = async event => {
     console.log("getAllCategory", event);
     const res = await Dynamo.getAllCategoryList(TableNames.Category);
+    if (event.headers.Authorization) {
+        const token = event.headers.Authorization;
+        const user = jwt.verify(token, process.env.JWT_SECRET)
+        event.user = user;
+    } else {
+        return API_RESPONSES.buildResponse(400, { message: 'Authorization required' })
+    }
     return API_RESPONSES.buildResponse(200, {
         res
     })
 }
 
-exports.updateCategory = (event, context, callback) => {
-    console.log("updateCategory", event);
+exports.updateCategory = async (event, context, callback) => {
     const data = JSON.parse(event.body);
-    console.log("data", data);
-    // const id = uuid.v1();
-    const CategoryName = data.CategoryName;
-    const Parent = data.Parent;
-    const Status = data.Status;
-    const Language = data.Language;
-    const Name = data.Name;
-    submitCategory(categoryInfo(CategoryName, Parent, Status, Language, Name))
-        .then(res => {
-            callback(null, {
-                statusCode: 200,
-                body: JSON.stringify({
-                    message: `Sucessfully submitted Category`,
-                    categoryId: res.id
-                })
-            });
-        })
-        .catch(err => {
-            console.log(err);
-            callback(null, {
-                statusCode: 500,
-                body: JSON.stringify({
-                    message: `Unable to submit Category`
-                })
-            })
-        });
-}
 
-
-const submitCategory = category => {
-    console.log('Submitting candidate');
-    const categoryInfo = {
+    const params = {
         TableName: TableNames.Category,
-        Item: category,
+        Item: {
+            id: event.pathParameters.id,
+            CategoryName: data.CategoryName,
+            Status: data.Status,
+            Parent: data.Parent,
+            Language: data.Language,
+            Name: data.Name,
+            company: data.company,
+            updatedon: timestamp
+        },
     };
-    return dynamodb.put(categoryInfo).promise()
-        .then(res => category);
-};
 
-
-const categoryInfo = ( CategoryName, Parent, Status, Language, Name) => {
-    const timestamp = new Date().getTime();
-    return {
-        id: uuid.v1(),
-        CategoryName: CategoryName,
-        Parent: Parent,
-        Status: Status,
-        Language: Language,
-        Name: Name,
-        submittedAt: timestamp,
-        updatedAt: timestamp,
-    };
-};
+    await dynamodb.put(params).promise();
+    return API_RESPONSES.buildResponse(200, {
+            message: "Category Updated successfully"
+    })
+}
 
 
 
